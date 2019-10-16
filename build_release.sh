@@ -63,14 +63,7 @@ activate_venv_if_not_activated ()
 update_deps ()
 {
     pip install -U setuptools wheel
-    pip install -r requirements-dev.txt
     pip install -r requirements.txt
-}
-
-run_tests ()
-{
-    echo "running test suite"
-    python -m pytest -v
 }
 
 bump_version ()
@@ -118,8 +111,6 @@ upload_to_pypi ()
 # this doesn't work, it starts thinking it is in a venv, but then can't deactivate
 cleanup ()
 {
-    echo "uninstalling dev dependencies..."
-    python -m pip uninstall -y -q -r requirements-dev.txt
     echo "leaving virtualenv"
     deactivate || echo "wasn't in venv"
 }
@@ -131,7 +122,6 @@ cleanup ()
 check_credential_file_exists
 activate_venv_if_not_activated
 update_deps
-run_tests  # damn, need to write tests
 bump_version
 create_dist
 update_changelog
