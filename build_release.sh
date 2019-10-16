@@ -38,28 +38,6 @@ check_credential_file_exists ()
     fi
 }
 
-activate_venv_if_not_activated ()
-{
-    if [ "$INVENV" -eq 1 ]; then
-        echo "Already in virtualenv..."
-    else
-        echo "Not in virtualenv, attempting to activate."
-        if [ -d venv ]; then
-            echo ""
-            echo "venv directory already exists"
-            echo ""
-        else
-            echo ""
-            echo "virtualenv doesn't yet exist, creating..."
-            echo ""
-            python3 -m venv venv
-        fi
-        echo "activating venv"
-        # shellcheck disable=SC1091
-        . venv/bin/activate
-    fi
-}
-
 update_deps ()
 {
     pip install -U setuptools wheel
@@ -108,22 +86,15 @@ upload_to_pypi ()
     fi
 }
 
-# this doesn't work, it starts thinking it is in a venv, but then can't deactivate
-cleanup ()
-{
-    echo "leaving virtualenv"
-    deactivate || echo "wasn't in venv"
-}
 
 #########################
 # Actually run the code #
 #########################
 
 check_credential_file_exists
-activate_venv_if_not_activated
 update_deps
 bump_version
 create_dist
 update_changelog
 upload_to_pypi
-cleanup
+
