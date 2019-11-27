@@ -28,4 +28,5 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     python_requires=">=3.6.4",
+    install_requires=['websocket-client==0.56.0'],
 )

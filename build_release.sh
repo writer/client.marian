@@ -49,24 +49,6 @@ bump_version ()
     echo "$SUGGESTED_VERSION" > VERSION
 }
 
-update_changelog ()
-{
-    # requires git access
-    echo "## $SUGGESTED_VERSION ($NOW)" > tmpfile
-    {
-        echo ""
-        git log --pretty=format:"- %s" "v$BASE_STRING"..HEAD
-        echo ""
-        echo ""
-        cat CHANGELOG.md
-    } >> tmpfile
-    mv tmpfile CHANGELOG.md
-
-    git add CHANGELOG.md VERSION marian_client/version.py
-    git commit -m "Bump version to ${SUGGESTED_VERSION}."
-    git tag -a -m "Tag version ${SUGGESTED_VERSION}." "v$SUGGESTED_VERSION"
-    git push origin --follow-tags
-}
 
 create_dist ()
 {
@@ -95,6 +77,5 @@ check_credential_file_exists
 update_deps
 bump_version
 create_dist
-update_changelog
 upload_to_pypi
 
