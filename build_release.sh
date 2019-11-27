@@ -13,7 +13,7 @@ V_MINOR=$((V_MINOR + 1))
 V_PATCH=0
 SUGGESTED_VERSION="$V_MAJOR.$V_MINOR.$V_PATCH"
 
-INVENV=$(python -c 'import sys; print ("1" if hasattr(sys, "base_prefix") else "0")')
+INVENV=$(python3 -c 'import sys; print ("1" if hasattr(sys, "base_prefix") else "0")')
 CREDS_LOCATION=$1
 
 
@@ -40,8 +40,8 @@ check_credential_file_exists ()
 
 update_deps ()
 {
-    pip install -U setuptools wheel
-    pip install -r requirements.txt
+    pip3 install -U setuptools wheel
+    pip3 install -r requirements.txt
 }
 
 bump_version ()
