@@ -30,7 +30,7 @@ class MarianClient:
         )
 
         try:
-            ws = create_connection(self._full_url(), timeout=2=self.timeout)
+            ws = create_connection(self._full_url(), timeout=self.timeout)
             ws.send(line)
 
         except:
