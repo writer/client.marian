@@ -62,7 +62,7 @@ class MarianClient:
             self.ws = create_connection(self.url, timeout=self.timeout)
             self.reset_connection_count += 1
             print(
-                f"Reconnected to {self.url} for the {self.reset_connection_count} time"
+                f"Reconnected to {self.url}. Reconnection count: {self.reset_connection_count}"
             )
 
     def _retry_count(self, retries_remaining):
