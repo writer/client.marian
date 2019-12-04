@@ -1,8 +1,31 @@
+"""
+Python3 websocket client for MarianNMT server
+"""
+
 import json
 import sys
 
+from time import sleep
+
 from websocket import create_connection
-from websocket._exceptions import *
+from websocket._exceptions import (
+    WebSocketTimeoutException,
+    WebSocketPayloadException,
+    WebSocketConnectionClosedException,
+    WebSocketAddressException,
+)
+
+GENERIC_WEBSOCKET_ERROR_CODE = 469
+
+
+def exponential_backoff(tries_so_far):
+    """
+    don't just hammer the server, wait in between retries
+    the more retries, the longer the wait
+    """
+    print(f"backing off, tries so far: {tries_so_far}")
+    MAX_BACKOFF_WAIT = 16
+    sleep(min(2 ** tries_so_far, MAX_BACKOFF_WAIT))
 
 
 class WebSocketError:
@@ -12,72 +35,70 @@ class WebSocketError:
 
 
 class MarianClient:
-    def __init__(self, HOST="localhost", PORT="5000", timeout=2, debug=False):
-        self.host = HOST
-        self.port = PORT
-        self.timeout = timeout
+    def __init__(
+        self, HOST="localhost", PORT="5000", timeout=2, debug=False, retries=2
+    ):
         self.debug = debug
+        self.timeout = timeout
+        self.retries = retries
+        self.url = f"ws://{HOST}:{PORT}/translate"
+        self.ws = create_connection(self.url, timeout=self.timeout)
+        self.reset_connection_count = 0
 
-    def _full_url(self):
-        return f"ws://{self.host}:{self.port}/translate"
+    def __del__(self):
+        """ clean up after yourself """
+        if self.ws and self.ws.connected:
+            self.ws.close()
+
+    def _ws_healthy(self):
+        connected = self.ws.connected
+        has_sock = bool(self.ws.sock)
+        return connected and has_sock
+
+    def _check_connection(self):
+        if not self._ws_healthy():
+            print("No longer connected to Marian Server...")
+            self.ws.close()
+            self.ws = create_connection(self.url, timeout=self.timeout)
+            self.reset_connection_count += 1
+            print(
+                f"Reconnected to {self.url}. Reconnection count: {self.reset_connection_count}"
+            )
+
+    def _retry_count(self, retries_remaining):
+        """
+        Converts from retries_remaining to 'how many retries so far'
+        """
+        return self.retries - retries_remaining
 
     def _send_message(self, tokenized_sentence: str):
+        success = False
+        retries_remaining = self.retries
+        # make sure we are still connected to the host
+        # will raise if we can't connect, and we don't want to catch
+        # since there is no hope if we can't connect
+        self._check_connection()
 
-        line = (
-            tokenized_sentence.decode("utf-8")
-            if sys.version_info < (3, 0)
-            else tokenized_sentence
-        )
-
-        try:
-            ws = create_connection(self._full_url(), timeout=self.timeout)
-            ws.send(line)
-
-        except:
-            r = WebSocketError(101, "ConnectionFailed")
-            success = False
-
-            return success, r
-
-        try:
-            r = ws.recv().rstrip()
-            success = True
-
-        except WebSocketTimeoutException as e:
-            """
-            socket timeout during read/write data
-            """
-            r = WebSocketError(408, e)
-            success = False
-
-        except WebSocketPayloadException as e:
-            """
-            websocket payload is invalid
-            """
-            r = WebSocketError(407, e)
-            success = False
-
-        except WebSocketConnectionClosedException as e:
-            """
-            If remote host closed the connection 
-            or some network error happened
-            """
-            r = WebSocketError(406, e)
-            success = False
-
-        except WebSocketAddressException as e:
-            """
-            websocket address info cannot be found
-            """
-            r = WebSocketError(405, e)
-            success = False
-
-        except Exception as e:
-            r = WebSocketError(404, e)
-            success = False
-
-        finally:
-            ws.close()
+        while (success == False) and (retries_remaining >= 0):
+            self.ws.send(tokenized_sentence)
+            try:
+                r = self.ws.recv().rstrip()
+                success = True
+            except (
+                WebSocketTimeoutException,
+                WebSocketPayloadException,
+                WebSocketConnectionClosedException,
+                WebSocketAddressException,
+                ConnectionResetError,
+                BrokenPipeError,
+            ) as e:
+                r = WebSocketError(GENERIC_WEBSOCKET_ERROR_CODE, e)
+                exponential_backoff(self._retry_count(retries_remaining))
+                retries_remaining -= 1
+        if success == False and retries_remaining <= 0:
+            # we assume that if the message failed `retries_remaining` times,
+            # then the connection is bad
+            self.ws.connected = False
 
         return success, r
 
@@ -89,6 +110,6 @@ class MarianClient:
             print(r.status_code, r.reason)
 
         if success:
-            return success, r, (None, None)
+            return True, r, (None, None)
         else:
-            return success, None, (r.status_code, r.reason)
+            return False, None, (r.status_code, r.reason)
