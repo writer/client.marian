@@ -54,7 +54,7 @@ class MarianClient:
             if not HOST:
                 HOST = "localhost"
             if not PORT:
-                PORT = 5000
+                PORT = 8080
             self.url = f"ws://{HOST}:{PORT}/translate"
         self.ws = create_connection(self.url, timeout=self.timeout)
         self.reset_connection_count = 0
