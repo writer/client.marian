@@ -1,3 +1,12 @@
+"""
+This test shouldn't be run directly with pytest
+(unless you really get what's going on)
+
+It is meant to be run by invoking client.marian/test.sh
+that shell script spins up a websocket echo server with artificial latency
+which this script talks to
+"""
+
 import pytest
 from essential_generators import DocumentGenerator
 

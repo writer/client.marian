@@ -1,6 +1,18 @@
+/*
+ * This NodeJS file starts a websocket echo server
+ * You don't need to manually invoke this
+ * Just run the tests by running client.marian/test.sh
+ * It will start this server and run pytests
+ *
+ * If this doesn't work, and you are debugging, first make sure you have
+ * nodejs version 10 or higher installed on your machine
+ */
+
 const WebSocket = require('ws');
 
 const wss = new WebSocket.Server({ port: 8080 });
+
+console.log("Echo websocket running at port 8080")
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
