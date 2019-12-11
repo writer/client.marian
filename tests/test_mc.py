@@ -11,7 +11,8 @@ gen = DocumentGenerator()
 sentences = [gen.sentence() for _ in range(TESTS_TO_RUN)]
 
 try:
-    mc = MC(PORT=8080)
+    # intentionally cause timeouts and retries
+    mc = MC(PORT=8080, timeout=1, retries=5)
 except Exception as e:
     raise Exception(
         "you need a specifc WS running on localhost:8080 to run theses tests "
