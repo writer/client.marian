@@ -57,3 +57,9 @@ else:
 ## License
 
 Like Marian, this package is released under the MIT license.
+
+## Credits
+
+This package was made by the NLP team at [Qordoba](https://qordoba.com/). If you are using it, and interested in working on NLP, maybe reach out to [Sam](mailto:sam.havens@qordoba.com?subject=NLP%20Team%20Application)?
+
+Thanks to [Marcin Junczys-Dowmunt](https://github.com/emjotde) and the rest of the awesome authors of Marian!
