@@ -61,13 +61,13 @@ create_dist ()
 
 upload_to_pypi ()
 {
-    echo "uploading to pypi"
+    echo "uploading to Pypi"
     if [ $PYPIRC = "here" ]; then
-        twine upload -r qpypi --config-file .pypirc dist/"$SERVICE_NAME"-"$SUGGESTED_VERSION".tar.gz
+        twine upload -r pypi --config-file .pypirc dist/"$SERVICE_NAME"-"$SUGGESTED_VERSION".tar.gz
     elif [ $PYPIRC = "creds" ]; then
-        twine upload -r qpypi --config-file "$CREDS_LOCATION" dist/"$SERVICE_NAME"-"$SUGGESTED_VERSION".tar.gz
+        twine upload -r pypi --config-file "$CREDS_LOCATION" dist/"$SERVICE_NAME"-"$SUGGESTED_VERSION".tar.gz
     else
-        twine upload -r qpypi --config-file ~/.pypirc dist/"$SERVICE_NAME"-"$SUGGESTED_VERSION".tar.gz
+        twine upload -r pypi --config-file ~/.pypirc dist/"$SERVICE_NAME"-"$SUGGESTED_VERSION".tar.gz
     fi
 }
 
