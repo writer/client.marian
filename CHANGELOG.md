@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Tests for this bug. It involves spinning up a WebSocket echo server, which is done with node and a shell script. Sorry.
 
+### Changed
+
+- Now MIT Licensed!
+
 ## [0.10.0] - 2019-12-03
 
 ### Fixed
