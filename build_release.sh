@@ -46,6 +46,8 @@ update_deps ()
 
 bump_version ()
 {
+    echo "Bumping minor version in VERSION file"
+    echo ""
     echo "$SUGGESTED_VERSION" > VERSION
 }
 
@@ -53,18 +55,19 @@ bump_version ()
 create_dist ()
 {
     echo "generating source distribution - this step bumps version.py to match VERSION"
+    echo ""
     python3 setup.py sdist
 }
 
 upload_to_pypi ()
 {
-    echo "uploading to pypi"
+    echo "uploading to Pypi"
     if [ $PYPIRC = "here" ]; then
-        twine upload --config-file .pypirc dist/"$SERVICE_NAME"-"$SUGGESTED_VERSION".tar.gz
+        twine upload -r pypi --config-file .pypirc dist/"$SERVICE_NAME"-"$SUGGESTED_VERSION".tar.gz
     elif [ $PYPIRC = "creds" ]; then
-        twine upload --config-file "$CREDS_LOCATION" dist/"$SERVICE_NAME"-"$SUGGESTED_VERSION".tar.gz
+        twine upload -r pypi --config-file "$CREDS_LOCATION" dist/"$SERVICE_NAME"-"$SUGGESTED_VERSION".tar.gz
     else
-        twine upload --config-file ~/.pypirc dist/"$SERVICE_NAME"-"$SUGGESTED_VERSION".tar.gz
+        twine upload -r pypi --config-file ~/.pypirc dist/"$SERVICE_NAME"-"$SUGGESTED_VERSION".tar.gz
     fi
 }
 
