@@ -4,7 +4,7 @@ from essential_generators import DocumentGenerator
 from marian_client import MarianClient as MC
 
 
-TESTS_TO_RUN = 2
+TESTS_TO_RUN = 20
 
 gen = DocumentGenerator()
 
