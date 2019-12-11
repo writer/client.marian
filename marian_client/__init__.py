@@ -18,16 +18,6 @@ from websocket._exceptions import (
 GENERIC_WEBSOCKET_ERROR_CODE = 469
 
 
-def exponential_backoff(tries_so_far):
-    """
-    don't just hammer the server, wait in between retries
-    the more retries, the longer the wait
-    """
-    print(f"backing off, tries so far: {tries_so_far}")
-    MAX_BACKOFF_WAIT = 16
-    sleep(min(2 ** tries_so_far, MAX_BACKOFF_WAIT))
-
-
 class WebSocketError:
     def __init__(self, status_code=408, error_message="WebSocketTimeoutException"):
         self.status_code = status_code
@@ -36,12 +26,36 @@ class WebSocketError:
 
 class MarianClient:
     def __init__(
-        self, HOST="localhost", PORT="5000", timeout=2, debug=False, retries=2
+        self, HOST=None, PORT=None, url=None, timeout=None, retries=None, debug=False
     ):
         self.debug = debug
+
+        if retries is not None:
+            # we use this as if it is 0-indexed
+            # but humans will enter a value that is 1-indexed
+            retries += 1
+
+        if timeout is None and retries is None:
+            timeout = 30
+            retries = 3
+        elif timeout is not None and retries is None:
+            retries = max(int(timeout / 2) - 2, 2)
+        elif retries is not None and timeout is None:
+            timeout = 30
+        print(f"setting timeout={timeout}sec, retries={retries}")
         self.timeout = timeout
         self.retries = retries
-        self.url = f"ws://{HOST}:{PORT}/translate"
+
+        if url:
+            if HOST or PORT:
+                print("If url is set, HOST and PORT are ignored")
+            self.url = url
+        else:
+            if not HOST:
+                HOST = "localhost"
+            if not PORT:
+                PORT = 5000
+            self.url = f"ws://{HOST}:{PORT}/translate"
         self.ws = create_connection(self.url, timeout=self.timeout)
         self.reset_connection_count = 0
 
@@ -50,20 +64,37 @@ class MarianClient:
         if self.ws and self.ws.connected:
             self.ws.close()
 
+    def exponential_backoff(self, tries_so_far):
+        """
+        don't just hammer the server, wait in between retries
+        the more retries, the longer the wait
+        """
+        print(f"backing off, tries so far: {tries_so_far}")
+        MAX_BACKOFF_WAIT = self.timeout + 4  # just in case add some buffer
+        sleep(min(2 ** tries_so_far, MAX_BACKOFF_WAIT))
+
     def _ws_healthy(self):
+        if not self.ws:
+            return False
         connected = self.ws.connected
         has_sock = bool(self.ws.sock)
         return connected and has_sock
 
+    def _reconnect(self):
+        if self.ws:
+            self.ws.close()
+        # don't wrap create_connection in try/catch
+        # we want to die if we can't connect
+        self.ws = create_connection(self.url, timeout=self.timeout)
+        self.reset_connection_count += 1
+        print(
+            f"Reconnected to {self.url}. Reconnection count: {self.reset_connection_count}"
+        )
+
     def _check_connection(self):
         if not self._ws_healthy():
             print("No longer connected to Marian Server...")
-            self.ws.close()
-            self.ws = create_connection(self.url, timeout=self.timeout)
-            self.reset_connection_count += 1
-            print(
-                f"Reconnected to {self.url}. Reconnection count: {self.reset_connection_count}"
-            )
+            self._reconnect()
 
     def _retry_count(self, retries_remaining):
         """
@@ -73,14 +104,26 @@ class MarianClient:
 
     def _send_message(self, tokenized_sentence: str):
         success = False
-        retries_remaining = self.retries
+        r = None
+        tries_remaining = self.retries
         # make sure we are still connected to the host
         # will raise if we can't connect, and we don't want to catch
         # since there is no hope if we can't connect
         self._check_connection()
 
-        while (success == False) and (retries_remaining >= 0):
+        try:
             self.ws.send(tokenized_sentence)
+        except (
+            WebSocketConnectionClosedException,
+            WebSocketAddressException,
+            ConnectionResetError,
+            BrokenPipeError,
+        ) as e:
+            print(e)
+            self.ws.connected = False
+            return False, WebSocketError(GENERIC_WEBSOCKET_ERROR_CODE, e)
+
+        while (success == False) and (tries_remaining > 0):
             try:
                 r = self.ws.recv().rstrip()
                 success = True
@@ -92,21 +135,25 @@ class MarianClient:
                 ConnectionResetError,
                 BrokenPipeError,
             ) as e:
+                success = False
                 r = WebSocketError(GENERIC_WEBSOCKET_ERROR_CODE, e)
-                exponential_backoff(self._retry_count(retries_remaining))
-                retries_remaining -= 1
-        if success == False and retries_remaining <= 0:
-            # we assume that if the message failed `retries_remaining` times,
+                tries_remaining -= 1
+                if tries_remaining > 0:
+                    self.exponential_backoff(self._retry_count(tries_remaining))
+
+        if success == False and tries_remaining <= 0:
+            # we assume that if the message failed `tries_remaining` times,
             # then the connection is bad
             self.ws.connected = False
 
+        assert r is not None, "If r isn't set by here, we didn't send a request"
         return success, r
 
     def __call__(self, tokenized_sentence: str):
 
         success, r = self._send_message(tokenized_sentence)
 
-        if self.debug:
+        if self.debug and r is not None:
             print(r.status_code, r.reason)
 
         if success:
