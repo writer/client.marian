@@ -14,7 +14,8 @@ try:
     mc = MC(PORT=8080)
 except Exception as e:
     raise Exception(
-        "you need a specifc WS running on localhost:8080 to run theses tests"
+        "you need a specifc WS running on localhost:8080 to run theses tests "
+        "- you also need node.js, a version that supports await syntax"
     )
 
 
