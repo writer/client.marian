@@ -26,7 +26,15 @@ class WebSocketError:
 
 class MarianClient:
     def __init__(
-        self, HOST=None, PORT=None, url=None, timeout=None, retries=None, debug=False
+        self,
+        HOST=None,
+        PORT=None,
+        url=None,
+        timeout=None,
+        retries=None,
+        connection_retries=10,
+        max_wait_time_between_connection_attempts=300,
+        debug=False,
     ):
         self.debug = debug
 
@@ -56,21 +64,44 @@ class MarianClient:
             if not PORT:
                 PORT = 8080
             self.url = f"ws://{HOST}:{PORT}/translate"
-        self.ws = create_connection(self.url, timeout=self.timeout)
+
         self.reset_connection_count = 0
+        CONNECTED_TO_MARIAN = False
+        while (
+            self.reset_connection_count < connection_retries and not CONNECTED_TO_MARIAN
+        ):
+            try:
+                self.ws = create_connection(self.url, timeout=self.timeout)
+                CONNECTED_TO_MARIAN = True
+            except ConnectionRefusedError:
+                print("Can't connect to Marian Server")
+                print(
+                    f"Will try to connect {connection_retries - self.reset_connection_count} more times, with exponentially increasing time between"
+                )
+                self.exponential_backoff(
+                    self.reset_connection_count,
+                    MAX_BACKOFF_WAIT=max_wait_time_between_connection_attempts,
+                )
+                self.reset_connection_count += 1
+                print("trying to connect to Marian server again...")
+
+        # if we can't connect after that long, actually fail
+        if not hasattr(self, "ws"):
+            raise ConnectionRefusedError("Can't connect to Marian Server")
 
     def __del__(self):
         """ clean up after yourself """
-        if self.ws and self.ws.connected:
+        if hasattr(self, "ws") and self.ws.connected:
             self.ws.close()
 
-    def exponential_backoff(self, tries_so_far):
+    def exponential_backoff(self, tries_so_far, MAX_BACKOFF_WAIT=None):
         """
         don't just hammer the server, wait in between retries
         the more retries, the longer the wait
         """
         print(f"backing off, tries so far: {tries_so_far}")
-        MAX_BACKOFF_WAIT = self.timeout + 4  # just in case add some buffer
+        if MAX_BACKOFF_WAIT is None:
+            MAX_BACKOFF_WAIT = self.timeout + 4  # just in case add some buffer
         sleep(min(2 ** tries_so_far, MAX_BACKOFF_WAIT))
 
     def _ws_healthy(self):
