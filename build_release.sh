@@ -9,12 +9,11 @@ V_MAJOR=${BASE_LIST[0]}
 V_MINOR=${BASE_LIST[1]}
 V_PATCH=${BASE_LIST[2]}
 echo -e "Current version: $BASE_STRING"
-V_MINOR=$((V_MINOR + 1))
-V_PATCH=0
-SUGGESTED_VERSION="$V_MAJOR.$V_MINOR.$V_PATCH"
+
 
 INVENV=$(python3 -c 'import sys; print ("1" if hasattr(sys, "base_prefix") else "0")')
 CREDS_LOCATION=$1
+PATCH_OR_MINOR=${2:-minor}
 
 
 check_credential_file_exists ()
@@ -46,7 +45,20 @@ update_deps ()
 
 bump_version ()
 {
-    echo "Bumping minor version in VERSION file"
+    # @TODO support "major" as well
+    if [ "$PATCH_OR_MINOR" = "patch" ]; then
+        echo "Bumping patch version in VERSION file"
+        V_PATCH=$((V_PATCH + 1))
+    elif [ "$PATCH_OR_MINOR" = "minor" ]; then
+        echo "Bumping minor version in VERSION file"
+        V_MINOR=$((V_MINOR + 1))
+        V_PATCH=0
+    else
+        echo "ERROR, 2nd argument should be 'patch', 'minor' or not set"
+        exit 1
+    fi
+
+    SUGGESTED_VERSION="$V_MAJOR.$V_MINOR.$V_PATCH"
     echo ""
     echo "$SUGGESTED_VERSION" > VERSION
 }
