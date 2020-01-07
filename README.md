@@ -54,6 +54,11 @@ else:
 # >>> "Alice likes cats ."
 ```
 
+## Notes
+
+* When instantiating a `MarianClient` instance, if we receive a `ConnectionRefusedError`, we attempt to reconnect `connection_retries` times, with exponential backoff, maxing out at `max_wait_time_between_connection_attempts`.
+* This means in the default case, if Marian Server is unavailable, we will try to connect, wait 1 second, try to connect again, wait 2 seconds, try to connect again, wait 4 seconds, ... then 8, 16, 32, 64, 128, 256, 300, then actually fail, for a total wait time of 811 seconds.
+
 ## License
 
 Like Marian, this package is released under the MIT license.

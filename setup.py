@@ -64,6 +64,8 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     python_requires=">=3.6.4",
-    install_requires=install_requires,
+    # install_requires=install_requires,
+    # there is NO REASON this should be needed
+    install_requires=["websocket-client==0.56.0"],
     tests_require=tests_require,
 )
