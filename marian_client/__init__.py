@@ -142,6 +142,8 @@ class MarianClient:
         # since there is no hope if we can't connect
         self._check_connection()
 
+        orig = tokenized_sentence
+
         try:
             self.ws.send(tokenized_sentence)
         except (
