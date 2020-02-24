@@ -47,7 +47,7 @@ class Quotes:
     ascii_single = "'"
     ascii_double = '"'
 
-    def __init__(self, orignal_string):
+    def __init__(self, orignal_string: str):
         self.orig = orignal_string
         # A list of characters that will be joined into the simplified string
         simplified_split: List[str] = []
@@ -68,7 +68,7 @@ class Quotes:
         self.simplified = "".join(simplified_split)
 
     @staticmethod
-    def is_quote(char: str):
+    def is_quote(char: str) -> bool:
         return char in Quotes.singles or char in Quotes.doubles
 
     @staticmethod
@@ -78,7 +78,7 @@ class Quotes:
         double_count = sum(x in Quotes.doubles for x in chars)
         return single_count, double_count
 
-    def requote_same_quote_count(self, modified_string: str):
+    def requote_same_quote_count(self, modified_string: str) -> str:
         requoted_split = []
         quotes = self.quote_positions[:]  # make a copy
         for char in list(modified_string):
@@ -88,7 +88,7 @@ class Quotes:
                 requoted_split.append(char)
         return "".join(requoted_split)
 
-    def requote_different_quote_count(self, modified_string: str):
+    def requote_different_quote_count(self, modified_string: str) -> str:
         """
         @TODO - assume this is rare and just make a best effort
         The idea is to use dmp to find diffs where the quotes don't match
