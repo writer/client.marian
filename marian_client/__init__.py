@@ -191,10 +191,12 @@ class MarianClient:
 
         success, r = self._send_message(tokenized_sentence)
 
-        if self.debug and r is not None:
-            print(r.status_code, r.reason)
-
         if success:
             return True, r, (None, None)
         else:
-            return False, None, (r.status_code, r.reason)
+            if r is not None:
+                if self.debug:
+                    print(r.status_code, r.reason)
+                return False, None, (r.status_code, r.reason)
+            else:
+                return False, None, (GENERIC_WEBSOCKET_ERROR_CODE, "Something went wrong")
