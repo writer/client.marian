@@ -56,7 +56,7 @@ class Quotes:
         self.quote_positions: List[str] = []
 
         for char in list(self.orig):
-            if char in Quotes.singles or char in Quotes.doubles:
+            if Quotes.is_quote(char):
                 self.quote_positions.append(char)
             if char in Quotes.singles:
                 simplified_split.append(Quotes.ascii_single)
