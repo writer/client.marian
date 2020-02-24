@@ -37,9 +37,30 @@ def test_requote_no_change(text: str):
 
 
 @pytest.mark.parametrize(
-    "before_after", list(zip(smart_quotes, change_words_not_quotes, requoted))
+    "before_after_correct", list(zip(smart_quotes, change_words_not_quotes, requoted))
 )
-def test_text_change_but_same_quote_count(before_after: Tuple[str, str, str]):
-    before, after, correct = before_after
+def test_text_change_but_same_quote_count(before_after_correct: Tuple[str, str, str]):
+    before, after, correct = before_after_correct
+    q = Quotes(before)
+    assert q.requote_modified_string(after) == correct
+
+
+changed_quote_cases = [
+    (
+        "Yeah , he’d’ve done something “intelligent”",
+        'Yeah , he\'s done something "intelligent"',
+        "Yeah , he’s done something “intelligent”",
+    ),
+    (
+        "There are many storeʼs like that one , which Iʼm a fan of",
+        "There are many stores like that one , which I'm a fan of",
+        "There are many stores like that one , which Iʼm a fan of",
+    ),
+]
+
+
+@pytest.mark.parametrize("before_after_correct", changed_quote_cases)
+def test_change_quote_count(before_after_correct: Tuple[str, str, str]):
+    before, after, correct = before_after_correct
     q = Quotes(before)
     assert q.requote_modified_string(after) == correct
