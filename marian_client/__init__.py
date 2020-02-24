@@ -15,6 +15,8 @@ from websocket._exceptions import (
     WebSocketAddressException,
 )
 
+from marian_client.quote_manager import Quotes
+
 GENERIC_WEBSOCKET_ERROR_CODE = 469
 
 
@@ -142,8 +144,11 @@ class MarianClient:
         # since there is no hope if we can't connect
         self._check_connection()
 
+        orignal_message = Quotes(tokenized_sentence)
+
         try:
-            self.ws.send(tokenized_sentence)
+            # need to strip smart quotes before sending
+            self.ws.send(orignal_message.simplified)
         except (
             WebSocketConnectionClosedException,
             WebSocketAddressException,
@@ -178,16 +183,20 @@ class MarianClient:
             self.ws.connected = False
 
         assert r is not None, "If r isn't set by here, we didn't send a request"
-        return success, r
+        # need to add back in smart quotes
+        corrected_message_requoted = orignal_message.requote_modified_string(r)
+        return success, corrected_message_requoted
 
     def __call__(self, tokenized_sentence: str):
 
         success, r = self._send_message(tokenized_sentence)
 
-        if self.debug and r is not None:
-            print(r.status_code, r.reason)
-
         if success:
             return True, r, (None, None)
         else:
-            return False, None, (r.status_code, r.reason)
+            if r is not None:
+                if self.debug:
+                    print(r.status_code, r.reason)
+                return False, None, (r.status_code, r.reason)
+            else:
+                return False, None, (GENERIC_WEBSOCKET_ERROR_CODE, "Something went wrong")
