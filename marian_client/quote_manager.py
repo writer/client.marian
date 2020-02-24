@@ -138,7 +138,7 @@ class Quotes:
                             else:
                                 requoted += char
                     else:
-                        # the only cases we handle are if a single quote was deleted
+                        # the only cases we handle are if one quote was deleted (single or double)
                         # everything else is too rare and complicated
                         old_single, old_double = PREVIOUS_QUOTE_COUNT
                         new_single, new_double = modified_quote_count
