@@ -40,6 +40,7 @@ check_credential_file_exists ()
 update_deps ()
 {
     pip3 install -U setuptools wheel
+    pip3 install -r requirements-dev.txt
     pip3 install -r requirements.txt
 }
 
